@@ -1,0 +1,51 @@
+name: Download Go Mod
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.go"
+      - "**/*.c"
+      - "**/*.h"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/build.yml"
+      - ".github/workflows/seed-build.yml"
+      - "Makefile"
+
+jobs:
+  down-deps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          
+      - name: Download go mod
+        run: |
+          export GOMODCACHE=`pwd`/GO-MOD
+          go mod download
+          
+      - name: Package Go Mod
+          tar -zcf dae-go-mod.tar.gz -C GO-MOD/cache download
+          
+      - name: Github Release file
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: true
+          tag_name: OBS_Deps
+          files: |
+            dae-go-mod.tar.gz
+            
+      - name: tirgger obs service
+        run: |
+          echo $(date) > OBS_TRIGGER/trigger
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add OBS_TRIGGER
+          git commit -m "chore: trigger obs service time"
+          git push origin main
+      
