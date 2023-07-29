@@ -1,5 +1,6 @@
 name: Download Go Mod
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
