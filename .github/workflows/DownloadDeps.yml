@@ -29,6 +29,7 @@ jobs:
           go mod download
           
       - name: Package Go Mod
+        run: |
           tar -zcf dae-go-mod.tar.gz -C GO-MOD/cache download
           
       - name: Github Release file
