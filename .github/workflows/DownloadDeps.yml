@@ -42,13 +42,13 @@ jobs:
           files: |
             dae-go-mod.tar.gz
             
-      - name: tirgger obs service
-        run: |
-          echo $(date) > OBS_TRIGGER/trigger
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add OBS_TRIGGER
-          sleep 180 && \
-          git commit -m "chore: trigger obs service time"
-          git push origin main
-      
+      # - name: tirgger obs service
+      #   run: |
+      #     echo $(date) > OBS_TRIGGER/trigger
+      #     git config user.name github-actions
+      #     git config user.email github-actions@github.com
+      #     git add OBS_TRIGGER
+      #     sleep 180 && \
+      #     git commit -m "chore: trigger obs service time"
+      #     git push origin main
+      # 
