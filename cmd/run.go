@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"os"
@@ -21,9 +22,10 @@ import (
 	"time"
 
 	"github.com/daeuniverse/outbound/netproxy"
-	"github.com/daeuniverse/outbound/pkg/fastrand"
 	"github.com/daeuniverse/outbound/protocol/direct"
 	"gopkg.in/natefinch/lumberjack.v2"
+
+	_ "net/http/pprof"
 
 	"github.com/daeuniverse/dae/cmd/internal"
 	"github.com/daeuniverse/dae/common"
@@ -60,7 +62,7 @@ func init() {
 	runCmd.PersistentFlags().BoolVarP(&disableTimestamp, "disable-timestamp", "", false, "Disable timestamp.")
 	runCmd.PersistentFlags().BoolVarP(&disablePidFile, "disable-pidfile", "", false, "Not generate /var/run/dae.pid.")
 
-	fastrand.Rand().Shuffle(len(CheckNetworkLinks), func(i, j int) {
+	rand.Shuffle(len(CheckNetworkLinks), func(i, j int) {
 		CheckNetworkLinks[i], CheckNetworkLinks[j] = CheckNetworkLinks[j], CheckNetworkLinks[i]
 	})
 }
@@ -122,6 +124,13 @@ func Run(log *logrus.Logger, conf *config.Config, externGeoDataDirs []string) (e
 	c, err := newControlPlane(log, nil, nil, conf, externGeoDataDirs)
 	if err != nil {
 		return err
+	}
+
+	var pprofServer *http.Server
+	if conf.Global.PprofPort != 0 {
+		pprofAddr := fmt.Sprintf("localhost:%d", conf.Global.PprofPort)
+		pprofServer = &http.Server{Addr: pprofAddr, Handler: nil}
+		go pprofServer.ListenAndServe()
 	}
 
 	// Serve tproxy TCP/UDP server util signals.
@@ -277,6 +286,16 @@ loop:
 				oldC.AbortConnections()
 			}
 			oldC.Close()
+
+			if pprofServer != nil {
+				pprofServer.Shutdown(context.Background())
+				pprofServer = nil
+			}
+			if newConf.Global.PprofPort != 0 {
+				pprofAddr := fmt.Sprintf("localhost:%d", conf.Global.PprofPort)
+				pprofServer = &http.Server{Addr: pprofAddr, Handler: nil}
+				go pprofServer.ListenAndServe()
+			}
 		case syscall.SIGHUP:
 			// Ignore.
 			continue
